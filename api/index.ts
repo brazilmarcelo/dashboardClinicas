@@ -9,7 +9,7 @@ const app = express();
 const port = process.env.PORT || 3001;
 
 app.use(cors());
-// FIX: The express.json() middleware must be invoked as a function. Passing it as a reference without calling it causes a TypeScript overload error.
+// FIX: The express.json() middleware must be invoked as a function.
 app.use(express.json());
 
 // Endpoint to get appointments

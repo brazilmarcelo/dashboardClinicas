@@ -58,6 +58,17 @@ const processDailyData = (appointments: ClienteAgendamento[], messages: ClienteM
 
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
+    // FIX: Handle PieChart tooltip case where `label` is undefined.
+    if (!label) {
+      const data = payload[0];
+      return (
+        <div className="p-2 bg-gray-800 bg-opacity-80 border border-gray-600 rounded-lg text-white text-sm">
+          <p style={{ color: data.payload.fill }}>{`${data.name}: ${data.value}`}</p>
+        </div>
+      );
+    }
+    
+    // Original logic for BarCharts
     return (
       <div className="p-2 bg-gray-800 bg-opacity-80 border border-gray-600 rounded-lg text-white text-sm">
         <p className="label">{`Data: ${label}`}</p>
@@ -97,15 +108,13 @@ export const Dashboard: React.FC = () => {
     const coraAppointments = appointments.filter(a => a.agendei === 'agendamento cora');
     const clientInteractions = appointments.filter(a => !a.agendei);
 
-    // FIX: Count all confirmed appointments from the total list, case-insensitively.
-    const confirmations = appointments.filter(a => a.status?.toLowerCase() === 'confirmado').length;
+    // FIX: Calculate confirmations based only on client interactions to ensure consistency with the pie chart.
+    const confirmations = clientInteractions.filter(a => a.status?.toLowerCase() === 'confirmado').length;
     
     const uniqueClients = new Set(messages.map(m => m.whatsapp)).size;
 
-    // FIX: Normalize status keys to match the COLORS object, making color lookup reliable.
     const statusCounts = clientInteractions.reduce((acc, curr) => {
         if (curr.status) {
-            // Capitalize first letter to match COLORS keys ('Confirmado', 'Desmarcado', etc.)
             const statusKey = curr.status.charAt(0).toUpperCase() + curr.status.slice(1).toLowerCase();
             acc[statusKey] = (acc[statusKey] || 0) + 1;
         }
