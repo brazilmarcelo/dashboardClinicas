@@ -14,8 +14,8 @@ app.use(express.json());
 // Endpoint to get appointments
 app.get('/api/appointments', async (req, res) => {
   try {
-    // Assumes table is 'cliente_agendamento' and its columns match the ClienteAgendamento type.
-    const result = await query('SELECT * FROM cliente_agendamento ORDER BY datacriacao DESC');
+    // FIX: Corrected table name from 'cliente_agendamento' to 'clienteagendamento'
+    const result = await query('SELECT * FROM clienteagendamento ORDER BY datacriacao DESC');
     res.json(result.rows);
   } catch (err) {
     console.error('Error fetching appointments:', err);
@@ -26,8 +26,8 @@ app.get('/api/appointments', async (req, res) => {
 // Endpoint to get messages
 app.get('/api/messages', async (req, res) => {
   try {
-    // Assumes table is 'cliente_mensagem' and its columns match the ClienteMensagem type.
-    const result = await query('SELECT * FROM cliente_mensagem ORDER BY datahoramensagem DESC');
+    // FIX: Corrected table name from 'cliente_mensagem' to 'clientemensagem'
+    const result = await query('SELECT * FROM clientemensagem ORDER BY datahoramensagem DESC');
     res.json(result.rows);
   } catch (err) {
     console.error('Error fetching messages:', err);
