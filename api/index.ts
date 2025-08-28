@@ -1,4 +1,4 @@
-import express, { json } from 'express';
+import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import { query } from './db';
@@ -9,14 +9,14 @@ const app = express();
 const port = process.env.PORT || 3001;
 
 app.use(cors());
-// FIX: Using the named import `json` to avoid a TypeScript overload resolution issue with `express.json()`.
-app.use(json());
+// FIX: Using express.json() to parse JSON request bodies. This resolves the TypeScript overload issue.
+app.use(express.json());
 
 // Endpoint to get appointments
 app.get('/api/appointments', async (req, res) => {
   try {
-    // FIX: Reverted table name to 'cliente_agendamento' to match README.md and likely DB schema.
-    const result = await query('SELECT * FROM cliente_agendamento ORDER BY datacriacao DESC');
+    // FIX: Corrected table name to 'clienteagendamento' based on database error.
+    const result = await query('SELECT * FROM clienteagendamento ORDER BY datacriacao DESC');
     res.json(result.rows);
   } catch (err) {
     console.error('Error fetching appointments:', err);
@@ -27,8 +27,8 @@ app.get('/api/appointments', async (req, res) => {
 // Endpoint to get messages
 app.get('/api/messages', async (req, res) => {
   try {
-    // FIX: Reverted table name to 'cliente_mensagem' to match README.md and likely DB schema.
-    const result = await query('SELECT * FROM cliente_mensagem ORDER BY datahoramensagem DESC');
+    // FIX: Corrected table name to 'clientemensagem' based on database error.
+    const result = await query('SELECT * FROM clientemensagem ORDER BY datahoramensagem DESC');
     res.json(result.rows);
   } catch (err) {
     console.error('Error fetching messages:', err);

@@ -21,7 +21,7 @@ This is a simple Node.js and Express backend to serve data from a PostgreSQL dat
     ```
 
 2.  **Database Setup:**
-    Ensure your PostgreSQL database has the required tables (`cliente_agendamento` and `cliente_mensagem`) with schemas matching the types defined in the frontend (`/types.ts`).
+    Ensure your PostgreSQL database has the required tables (`clienteagendamento` and `clientemensagem`) with schemas matching the types defined in the frontend (`/types.ts`).
 
 3.  **Environment Variables:**
     Create a `.env` file in the `api` directory by copying the `.env.example`:
