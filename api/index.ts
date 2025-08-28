@@ -10,6 +10,7 @@ const port = process.env.PORT || 3001;
 
 app.use(cors());
 // FIX: Using express.json() to parse JSON request bodies. This resolves the TypeScript overload issue.
+// fix: The express.json middleware must be invoked as a function.
 app.use(express.json());
 
 // Endpoint to get appointments
