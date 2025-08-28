@@ -15,29 +15,45 @@ const COLORS = {
 
 const processDailyData = (appointments: ClienteAgendamento[], messages: ClienteMensagem[]) => {
     const dailyMap = new Map<string, { Agendamentos: number; Confirmado: number; Desmarcado: number; Atendimentos: number }>();
+    const processDate = (dateStr: string) => new Date(dateStr).toISOString().split('T')[0];
 
-    const processDate = (date: Date) => date.toISOString().split('T')[0];
-
+    // Process appointments based on new logic
     appointments.forEach(appt => {
-        const day = processDate(new Date(appt.datacriacao));
+        const day = processDate(appt.datacriacao);
         const entry = dailyMap.get(day) || { Agendamentos: 0, Confirmado: 0, Desmarcado: 0, Atendimentos: 0 };
-        entry.Agendamentos += 1;
-        if (appt.status === 'Confirmado') entry.Confirmado += 1;
-        if (appt.status === 'Desmarcado') entry.Desmarcado += 1;
+        
+        if (appt.agendei === 'agendamento cora') {
+            entry.Agendamentos += 1;
+        } else if (!appt.agendei) { // agendei IS NULL
+            if (appt.status === 'Confirmado') entry.Confirmado += 1;
+            if (appt.status === 'Desmarcado') entry.Desmarcado += 1;
+        }
         dailyMap.set(day, entry);
     });
 
+    // Process messages for unique daily attendances
+    const dailyAttendance = new Map<string, Set<string>>();
     messages.forEach(msg => {
-        const day = processDate(new Date(msg.datahoramensagem));
-        const entry = dailyMap.get(day) || { Agendamentos: 0, Confirmado: 0, Desmarcado: 0, Atendimentos: 0 };
-        entry.Atendimentos += 1;
-        dailyMap.set(day, entry);
+        const day = processDate(msg.datahoramensagem);
+        if (!dailyAttendance.has(day)) {
+            dailyAttendance.set(day, new Set<string>());
+        }
+        // Add whatsapp to the Set for the given day to count unique clients
+        dailyAttendance.get(day)!.add(msg.whatsapp);
     });
 
+    // Merge unique attendance counts into the main map
+    dailyAttendance.forEach((whatsappSet, day) => {
+        const entry = dailyMap.get(day) || { Agendamentos: 0, Confirmado: 0, Desmarcado: 0, Atendimentos: 0 };
+        entry.Atendimentos = whatsappSet.size;
+        dailyMap.set(day, entry);
+    });
+    
     return Array.from(dailyMap.entries())
         .map(([date, values]) => ({ date, ...values }))
         .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 };
+
 
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
@@ -76,17 +92,29 @@ export const Dashboard: React.FC = () => {
 
   const dailyChartData = useMemo(() => processDailyData(appointments, messages).slice(-30), [appointments, messages]);
 
-  const statusPieData = useMemo(() => {
-    const statusCounts = appointments.reduce((acc, curr) => {
+  const { totalAppointments, totalUniqueClients, totalConfirmations, statusPieData } = useMemo(() => {
+    const coraAppointments = appointments.filter(a => a.agendei === 'agendamento cora');
+    const clientInteractions = appointments.filter(a => !a.agendei);
+
+    const confirmations = clientInteractions.filter(a => a.status === 'Confirmado').length;
+    
+    const uniqueClients = new Set(messages.map(m => m.whatsapp)).size;
+
+    const statusCounts = clientInteractions.reduce((acc, curr) => {
         acc[curr.status] = (acc[curr.status] || 0) + 1;
         return acc;
     }, {} as Record<string, number>);
-    return Object.entries(statusCounts).map(([name, value]) => ({ name, value }));
-  }, [appointments]);
+    
+    const pieData = Object.entries(statusCounts).map(([name, value]) => ({ name, value }));
 
-  const totalAppointments = appointments.length;
-  const totalMessages = messages.length;
-  const totalConfirmations = appointments.filter(a => a.status === 'Confirmado').length;
+    return {
+      totalAppointments: coraAppointments.length,
+      totalUniqueClients: uniqueClients,
+      totalConfirmations: confirmations,
+      statusPieData: pieData,
+    };
+  }, [appointments, messages]);
+
 
   if (loading) {
     return <div className="flex justify-center items-center h-full text-gray-500 dark:text-gray-400">Carregando...</div>;
@@ -98,8 +126,8 @@ export const Dashboard: React.FC = () => {
 
         {/* Stat Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            <Card title="Total de Agendamentos" value={totalAppointments.toString()} color="violet" />
-            <Card title="Total de Atendimentos" value={totalMessages.toString()} color="blue" />
+            <Card title="Total de Agendamentos (IA)" value={totalAppointments.toString()} color="violet" />
+            <Card title="Total de Clientes Atendidos" value={totalUniqueClients.toString()} color="blue" />
             <Card title="Agendamentos Confirmados" value={totalConfirmations.toString()} color="emerald" />
         </div>
 
@@ -120,7 +148,7 @@ export const Dashboard: React.FC = () => {
                 </ResponsiveContainer>
             </div>
             <div className="lg:col-span-2 bg-content-light dark:bg-content-dark p-6 rounded-xl shadow-lg">
-                <h3 className="font-bold mb-4 text-lg">Status dos Agendamentos</h3>
+                <h3 className="font-bold mb-4 text-lg">Status das Interações de Clientes</h3>
                 <ResponsiveContainer width="100%" height={300}>
                     <PieChart>
                         <Pie
@@ -135,7 +163,7 @@ export const Dashboard: React.FC = () => {
                             label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
                         >
                             {statusPieData.map((entry, index) => (
-                                <Cell key={`cell-${index}`} fill={COLORS[entry.name as keyof typeof COLORS]} />
+                                <Cell key={`cell-${index}`} fill={COLORS[entry.name as keyof typeof COLORS] || '#8884d8'} />
                             ))}
                         </Pie>
                         <Tooltip content={<CustomTooltip />} />
@@ -145,7 +173,7 @@ export const Dashboard: React.FC = () => {
             </div>
         </div>
         <div className="bg-content-light dark:bg-content-dark p-6 rounded-xl shadow-lg">
-             <h3 className="font-bold mb-4 text-lg">Status de Agendamentos Diários (Últimos 30 dias)</h3>
+             <h3 className="font-bold mb-4 text-lg">Status de Confirmação Diária (Últimos 30 dias)</h3>
              <ResponsiveContainer width="100%" height={300}>
                  <BarChart data={dailyChartData}>
                      <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.2} />
@@ -153,8 +181,8 @@ export const Dashboard: React.FC = () => {
                      <YAxis fontSize={12} tick={{ fill: 'currentColor' }} />
                      <Tooltip content={<CustomTooltip />} cursor={{fill: 'rgba(139, 92, 246, 0.1)'}} />
                      <Legend />
-                     <Bar dataKey="Confirmado" fill={COLORS.Confirmado} />
-                     <Bar dataKey="Desmarcado" fill={COLORS.Desmarcado} />
+                     <Bar dataKey="Confirmado" stackId="status" fill={COLORS.Confirmado} />
+                     <Bar dataKey="Desmarcado" stackId="status" fill={COLORS.Desmarcado} />
                  </BarChart>
              </ResponsiveContainer>
         </div>
