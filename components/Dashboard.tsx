@@ -1,7 +1,6 @@
-
 import React, { useEffect, useState, useMemo } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { fetchAppointments, fetchMessages } from '../services/mockApi';
+import { fetchAppointments, fetchAllMessages } from '../services/mockApi';
 import type { ClienteAgendamento, ClienteMensagem } from '../types';
 import { Card } from './ui/Card';
 
@@ -25,8 +24,10 @@ const processDailyData = (appointments: ClienteAgendamento[], messages: ClienteM
         if (appt.agendei === 'agendamento cora') {
             entry.Agendamentos += 1;
         } else if (!appt.agendei) { // agendei IS NULL
-            if (appt.status === 'Confirmado') entry.Confirmado += 1;
-            if (appt.status === 'Desmarcado') entry.Desmarcado += 1;
+            // FIX: Make status check case-insensitive to ensure chart data is populated.
+            const status = appt.status?.toLowerCase();
+            if (status === 'confirmado') entry.Confirmado += 1;
+            if (status === 'desmarcado') entry.Desmarcado += 1;
         }
         dailyMap.set(day, entry);
     });
@@ -78,7 +79,7 @@ export const Dashboard: React.FC = () => {
     const loadData = async () => {
       try {
         setLoading(true);
-        const [apptData, msgData] = await Promise.all([fetchAppointments(), fetchMessages()]);
+        const [apptData, msgData] = await Promise.all([fetchAppointments(), fetchAllMessages()]);
         setAppointments(apptData);
         setMessages(msgData);
       } catch (error) {
@@ -96,12 +97,18 @@ export const Dashboard: React.FC = () => {
     const coraAppointments = appointments.filter(a => a.agendei === 'agendamento cora');
     const clientInteractions = appointments.filter(a => !a.agendei);
 
-    const confirmations = clientInteractions.filter(a => a.status === 'Confirmado').length;
+    // FIX: Count all confirmed appointments from the total list, case-insensitively.
+    const confirmations = appointments.filter(a => a.status?.toLowerCase() === 'confirmado').length;
     
     const uniqueClients = new Set(messages.map(m => m.whatsapp)).size;
 
+    // FIX: Normalize status keys to match the COLORS object, making color lookup reliable.
     const statusCounts = clientInteractions.reduce((acc, curr) => {
-        acc[curr.status] = (acc[curr.status] || 0) + 1;
+        if (curr.status) {
+            // Capitalize first letter to match COLORS keys ('Confirmado', 'Desmarcado', etc.)
+            const statusKey = curr.status.charAt(0).toUpperCase() + curr.status.slice(1).toLowerCase();
+            acc[statusKey] = (acc[statusKey] || 0) + 1;
+        }
         return acc;
     }, {} as Record<string, number>);
     

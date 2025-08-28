@@ -15,6 +15,19 @@ export const fetchAppointments = (): Promise<ClienteAgendamento[]> => {
   return fetch(`${API_BASE_URL}/appointments`).then(handleResponse<ClienteAgendamento[]>);
 };
 
-export const fetchMessages = (): Promise<ClienteMensagem[]> => {
+export const fetchAllMessages = (): Promise<ClienteMensagem[]> => {
   return fetch(`${API_BASE_URL}/messages`).then(handleResponse<ClienteMensagem[]>);
+};
+
+export const fetchMessagesByWhatsapp = (whatsapp: string): Promise<ClienteMensagem[]> => {
+  return fetch(`${API_BASE_URL}/messages?whatsapp=${encodeURIComponent(whatsapp)}`).then(handleResponse<ClienteMensagem[]>);
+};
+
+export interface Contact {
+  whatsapp: string;
+  last_message_date: string;
+}
+
+export const fetchContacts = (): Promise<Contact[]> => {
+    return fetch(`${API_BASE_URL}/contacts`).then(handleResponse<Contact[]>);
 };

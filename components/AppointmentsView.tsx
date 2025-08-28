@@ -102,6 +102,7 @@ export const AppointmentsView: React.FC = () => {
                 <th scope="col" className="px-6 py-3">WhatsApp</th>
                 <th scope="col" className="px-6 py-3">Data Agendamento</th>
                 <th scope="col" className="px-6 py-3">Status</th>
+                <th scope="col" className="px-6 py-3">ID Agenda HD</th>
                 <th scope="col" className="px-6 py-3">Data Criação</th>
               </tr>
             </thead>
@@ -116,6 +117,7 @@ export const AppointmentsView: React.FC = () => {
                       {appt.status}
                     </span>
                   </td>
+                  <td className="px-6 py-4">{appt.idagendahd}</td>
                   <td className="px-6 py-4">{formatDate(appt.datacriacao)}</td>
                 </tr>
               ))}

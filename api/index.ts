@@ -9,8 +9,7 @@ const app = express();
 const port = process.env.PORT || 3001;
 
 app.use(cors());
-// FIX: Using express.json() to parse JSON request bodies. This resolves the TypeScript overload issue.
-// fix: The express.json middleware must be invoked as a function.
+// FIX: The express.json() middleware must be invoked as a function. Passing it as a reference without calling it causes a TypeScript overload error.
 app.use(express.json());
 
 // Endpoint to get appointments
@@ -25,12 +24,40 @@ app.get('/api/appointments', async (req, res) => {
   }
 });
 
+// Endpoint to get unique contacts (whatsapp numbers)
+app.get('/api/contacts', async (req, res) => {
+  try {
+    const result = await query(
+      `SELECT whatsapp, MAX(datahoramensagem) as last_message_date 
+       FROM clientemensagem 
+       GROUP BY whatsapp 
+       ORDER BY last_message_date DESC`
+    );
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Error fetching contacts:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+
 // Endpoint to get messages
 app.get('/api/messages', async (req, res) => {
+  const { whatsapp } = req.query;
+
   try {
-    // FIX: Corrected table name to 'clientemensagem' based on database error.
-    const result = await query('SELECT * FROM clientemensagem ORDER BY datahoramensagem DESC');
-    res.json(result.rows);
+    if (whatsapp && typeof whatsapp === 'string') {
+      // Fetch messages for a specific contact, ordered chronologically for chat view
+      const result = await query(
+        'SELECT * FROM clientemensagem WHERE whatsapp = $1 ORDER BY datahoramensagem ASC',
+        [whatsapp]
+      );
+      res.json(result.rows);
+    } else {
+      // Fetch all messages if no whatsapp number is provided (for dashboard)
+      const result = await query('SELECT * FROM clientemensagem ORDER BY datahoramensagem DESC');
+      res.json(result.rows);
+    }
   } catch (err) {
     console.error('Error fetching messages:', err);
     res.status(500).json({ error: 'Internal server error' });
