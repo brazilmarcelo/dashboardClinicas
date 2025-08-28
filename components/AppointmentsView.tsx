@@ -15,6 +15,7 @@ export const AppointmentsView: React.FC = () => {
   const [appointments, setAppointments] = useState<ClienteAgendamento[]>([]);
   const [loading, setLoading] = useState(true);
   const [filterDate, setFilterDate] = useState('');
+  const [filterCreationDate, setFilterCreationDate] = useState('');
   const [viewType, setViewType] = useState<ViewType>('cora');
 
   useEffect(() => {
@@ -33,20 +34,30 @@ export const AppointmentsView: React.FC = () => {
   }, []);
 
   const filteredAppointments = useMemo(() => {
-    const typeFiltered = appointments.filter(appt => {
+    let filtered = appointments.filter(appt => {
       if (viewType === 'cora') {
         return appt.agendei === 'agendamento cora';
       }
       return !appt.agendei; // For confirmations/cancellations
     });
 
-    if (!filterDate) return typeFiltered;
+    if (filterDate) {
+        filtered = filtered.filter(appt => {
+            const apptDate = new Date(appt.dataagendamento).toISOString().split('T')[0];
+            return apptDate === filterDate;
+        });
+    }
 
-    return typeFiltered.filter(appt => {
-      const apptDate = new Date(appt.dataagendamento).toISOString().split('T')[0];
-      return apptDate === filterDate;
-    });
-  }, [appointments, filterDate, viewType]);
+    if (filterCreationDate) {
+        filtered = filtered.filter(appt => {
+            const creationDate = new Date(appt.datacriacao).toISOString().split('T')[0];
+            return creationDate === filterCreationDate;
+        });
+    }
+    
+    return filtered;
+  }, [appointments, filterDate, filterCreationDate, viewType]);
+
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('pt-BR', {
@@ -79,15 +90,36 @@ export const AppointmentsView: React.FC = () => {
                 Confirmações/Desmarcações
             </button>
         </div>
-        <div className="flex items-center space-x-4">
-            <label htmlFor="filterDate" className="font-medium">Filtrar por data do agendamento:</label>
-            <input
-                type="date"
-                id="filterDate"
-                value={filterDate}
-                onChange={(e) => setFilterDate(e.target.value)}
-                className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-light focus:border-primary-light block p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white"
-            />
+        <div className="flex flex-wrap items-center gap-x-6 gap-y-4">
+            <div className="flex items-center gap-2">
+                <label htmlFor="filterDate" className="font-medium text-sm whitespace-nowrap">Data do Agendamento:</label>
+                <input
+                    type="date"
+                    id="filterDate"
+                    value={filterDate}
+                    onChange={(e) => setFilterDate(e.target.value)}
+                    className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-light focus:border-primary-light block p-2 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white"
+                />
+            </div>
+            <div className="flex items-center gap-2">
+                <label htmlFor="filterCreationDate" className="font-medium text-sm whitespace-nowrap">Data de Criação:</label>
+                <input
+                    type="date"
+                    id="filterCreationDate"
+                    value={filterCreationDate}
+                    onChange={(e) => setFilterCreationDate(e.target.value)}
+                    className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-light focus:border-primary-light block p-2 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white"
+                />
+            </div>
+            <button
+                onClick={() => {
+                    setFilterDate('');
+                    setFilterCreationDate('');
+                }}
+                className="px-3 py-2 text-sm font-medium rounded-md transition-colors text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 border border-gray-300 dark:border-gray-600"
+            >
+                Limpar Filtros
+            </button>
         </div>
       </div>
       
