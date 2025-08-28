@@ -1,0 +1,5 @@
+{
+  "name": "Painel de Atendimento IA",
+  "description": "Um painel para visualizar e gerenciar atendimentos, agendamentos e mensagens processadas por uma assistente de IA. Inclui gráficos de desempenho diário e ferramentas de filtragem de dados.",
+  "requestFramePermissions": []
+}
