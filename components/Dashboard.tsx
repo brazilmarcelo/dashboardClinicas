@@ -24,10 +24,10 @@ const processDailyData = (appointments: ClienteAgendamento[], messages: ClienteM
         if (appt.agendei === 'agendamento cora') {
             entry.Agendamentos += 1;
         } else if (!appt.agendei) { // agendei IS NULL
-            // FIX: Make status check case-insensitive to ensure chart data is populated.
             const status = appt.status?.toLowerCase();
             if (status === 'confirmado') entry.Confirmado += 1;
-            if (status === 'desmarcado') entry.Desmarcado += 1;
+            // FIX: Handle plural 'desmarcados' from data
+            if (status === 'desmarcado' || status === 'desmarcados') entry.Desmarcado += 1;
         }
         dailyMap.set(day, entry);
     });
@@ -115,7 +115,11 @@ export const Dashboard: React.FC = () => {
 
     const statusCounts = clientInteractions.reduce((acc, curr) => {
         if (curr.status) {
-            const statusKey = curr.status.charAt(0).toUpperCase() + curr.status.slice(1).toLowerCase();
+            let statusKey = curr.status.charAt(0).toUpperCase() + curr.status.slice(1).toLowerCase();
+            // FIX: Normalize 'Desmarcados' to 'Desmarcado' for color consistency
+            if (statusKey === 'Desmarcados') {
+              statusKey = 'Desmarcado';
+            }
             acc[statusKey] = (acc[statusKey] || 0) + 1;
         }
         return acc;
