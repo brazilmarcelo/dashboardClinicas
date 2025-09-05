@@ -1,3 +1,4 @@
+
 import { ClienteAgendamento, ClienteMensagem } from '../types';
 
 const API_BASE_URL = 'http://localhost:3001/api'; // Assuming the backend runs on port 3001
@@ -31,3 +32,7 @@ export interface Contact {
 export const fetchContacts = (): Promise<Contact[]> => {
     return fetch(`${API_BASE_URL}/contacts`).then(handleResponse<Contact[]>);
 };
+
+export const fetchReport = (reportName: string): Promise<any> => {
+    return fetch(`${API_BASE_URL}/reports?name=${reportName}`).then(handleResponse);
+}
