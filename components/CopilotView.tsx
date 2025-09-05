@@ -1,4 +1,5 @@
 
+
 import React, { useEffect, useState, useMemo } from 'react';
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { fetchReport } from '../services/mockApi';
@@ -15,7 +16,10 @@ type AiResponseRate = { mensagens_cliente_com_resposta_ia: number, total_mensage
 type ReturningClients = { total_clientes: number, clientes_que_retornaram: number };
 type AiResponseSpeed = { tempo_medio_resposta_segundos: number | null };
 
-const COLORS = ['#8884d8', '#82ca9d', '#ffc658', '#ff8042', '#0088FE', '#00C49F', '#FFBB28'];
+const SERVICE_HOURS_COLORS = {
+  'Horário Comercial': '#82ca9d',
+  'Fora do Horário Comercial': '#ffc658',
+};
 
 const ReportCard: React.FC<{ children: React.ReactNode; title: string, className?: string }> = ({ children, title, className }) => (
   <div className={`bg-content-light dark:bg-content-dark p-6 rounded-xl shadow-lg ${className}`}>
@@ -26,6 +30,17 @@ const ReportCard: React.FC<{ children: React.ReactNode; title: string, className
 
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
+    // Special case for PieChart tooltip, which doesn't have a `label`
+    if (payload[0].name && typeof payload[0].value !== 'undefined' && !label) {
+        const data = payload[0];
+        return (
+            <div className="p-2 bg-gray-800 bg-opacity-80 border border-gray-600 rounded-lg text-white text-sm">
+                <p style={{ color: data.fill }}>{`${data.name}: ${data.value}`}</p>
+            </div>
+        );
+    }
+    
+    // Default for other charts like Bar, Line
     return (
       <div className="p-2 bg-gray-800 bg-opacity-80 border border-gray-600 rounded-lg text-white text-sm">
         <p className="label">{`${label}`}</p>
@@ -95,7 +110,7 @@ export const CopilotView: React.FC = () => {
     }, []);
 
     const formattedDailyMessages = useMemo(() => 
-        dailyMessages.map(d => ({...d, data_da_mensagem: new Date(d.data_da_mensagem).toLocaleDateString('pt-BR')}))
+        dailyMessages.map(d => ({...d, data_da_mensagem: new Date(d.data_da_mensagem).toLocaleDateString('pt-BR', { timeZone: 'UTC' })}))
     , [dailyMessages]);
     
     const responseRatePercent = useMemo(() => {
@@ -134,14 +149,14 @@ export const CopilotView: React.FC = () => {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <ReportCard title="Mensagens por Dia">
                     <ResponsiveContainer width="100%" height={300}>
-                        <LineChart data={formattedDailyMessages}>
+                        <BarChart data={formattedDailyMessages}>
                             <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.2} />
-                            <XAxis dataKey="data_da_mensagem" fontSize={12} tick={{ fill: 'currentColor' }}/>
+                            <XAxis dataKey="data_da_mensagem" fontSize={12} tick={{ fill: 'currentColor' }} angle={-25} textAnchor="end" height={60} interval="preserveStartEnd" />
                             <YAxis fontSize={12} tick={{ fill: 'currentColor' }}/>
-                            <Tooltip content={<CustomTooltip />} />
+                            <Tooltip content={<CustomTooltip />} cursor={{fill: 'rgba(139, 92, 246, 0.1)'}} />
                             <Legend />
-                            <Line type="monotone" dataKey="quantidade_mensagens" name="Mensagens" stroke="#8884d8" strokeWidth={2} />
-                        </LineChart>
+                            <Bar dataKey="quantidade_mensagens" name="Mensagens" fill="#8884d8" />
+                        </BarChart>
                     </ResponsiveContainer>
                 </ReportCard>
 
@@ -175,10 +190,21 @@ export const CopilotView: React.FC = () => {
                 <ReportCard title="Horário de Atendimento" className="lg:col-span-2">
                      <ResponsiveContainer width="100%" height={300}>
                         <PieChart>
-                           <Pie data={serviceHours} dataKey="quantidade_mensagens" nameKey="periodo_atendimento" cx="50%" cy="50%" outerRadius={80} label>
-                                {serviceHours.map((entry, index) => <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />)}
+                            <Pie 
+                                data={serviceHours} 
+                                dataKey="quantidade_mensagens" 
+                                nameKey="periodo_atendimento" 
+                                cx="50%" 
+                                cy="50%" 
+                                outerRadius={80} 
+                                labelLine={false}
+                                label={({ name, percent }) => `${(percent * 100).toFixed(0)}%`}
+                            >
+                                {serviceHours.map((entry) => (
+                                    <Cell key={`cell-${entry.periodo_atendimento}`} fill={SERVICE_HOURS_COLORS[entry.periodo_atendimento as keyof typeof SERVICE_HOURS_COLORS]} />
+                                ))}
                            </Pie>
-                           <Tooltip />
+                           <Tooltip content={<CustomTooltip />} />
                            <Legend />
                         </PieChart>
                     </ResponsiveContainer>

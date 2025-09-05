@@ -1,5 +1,6 @@
 
 
+
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
@@ -92,7 +93,19 @@ app.get('/api/reports', async (req, res) => {
             sql = `SELECT DATE(datahoramensagem) AS data_do_dia, COUNT(DISTINCT whatsapp) AS quantidade_contatos_unicos FROM public.clientemensagem WHERE datahoramensagem IS NOT NULL AND whatsapp IS NOT NULL AND whatsapp <> '' GROUP BY DATE(datahoramensagem) ORDER BY data_do_dia;`;
             break;
         case 'serviceHours':
-            sql = `SELECT CASE WHEN EXTRACT(HOUR FROM datahoramensagem) BETWEEN 8 AND 18 AND EXTRACT(DOW FROM datahoramensagem) BETWEEN 1 AND 5 THEN 'Horário Comercial' ELSE 'Fora do Horário Comercial' END AS periodo_atendimento, COUNT(*) AS quantidade_mensagens, COUNT(DISTINCT whatsapp) AS contatos_unicos FROM public.clientemensagem WHERE datahoramensagem IS NOT NULL GROUP BY 1;`;
+            sql = `
+                SELECT
+                    CASE
+                        WHEN EXTRACT(HOUR FROM datahoramensagem) BETWEEN 8 AND 18
+                             AND EXTRACT(DOW FROM datahoramensagem) BETWEEN 1 AND 5
+                        THEN 'Horário Comercial'
+                        ELSE 'Fora do Horário Comercial'
+                    END AS periodo_atendimento,
+                    COUNT(*) AS quantidade_mensagens
+                FROM public.clientemensagem
+                WHERE datahoramensagem IS NOT NULL
+                GROUP BY periodo_atendimento;
+            `;
             break;
         case 'hourlyActivity':
             sql = `SELECT EXTRACT(HOUR FROM datahoramensagem) AS hora_do_dia, COUNT(*) AS numero_de_mensagens, COUNT(DISTINCT whatsapp) AS contatos_unicos_por_hora FROM public.clientemensagem WHERE datahoramensagem IS NOT NULL GROUP BY EXTRACT(HOUR FROM datahoramensagem) ORDER BY hora_do_dia;`;
