@@ -1,7 +1,7 @@
 
 import React from 'react';
 import type { View } from '../App';
-import { DashboardIcon, CalendarIcon, MessageIcon, SparklesIcon } from '../constants';
+import { DashboardIcon, CalendarIcon, MessageIcon } from '../constants';
 
 interface SidebarProps {
   currentView: View;
@@ -53,12 +53,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, setCurrentView, i
             label="Dashboard"
             isActive={currentView === 'dashboard'}
             onClick={() => handleNavigation('dashboard')}
-          />
-           <NavItem
-            icon={<SparklesIcon className="w-6 h-6" />}
-            label="Copilot"
-            isActive={currentView === 'copilot'}
-            onClick={() => handleNavigation('copilot')}
           />
           <NavItem
             icon={<CalendarIcon className="w-6 h-6" />}

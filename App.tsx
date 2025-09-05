@@ -4,11 +4,10 @@ import { Sidebar } from './components/Sidebar';
 import { Dashboard } from './components/Dashboard';
 import { AppointmentsView } from './components/AppointmentsView';
 import { MessagesView } from './components/MessagesView';
-import { CopilotView } from './components/CopilotView';
 import { ThemeToggle } from './components/ui/ThemeToggle';
 import { MenuIcon, XIcon } from './constants';
 
-export type View = 'dashboard' | 'appointments' | 'messages' | 'copilot';
+export type View = 'dashboard' | 'appointments' | 'messages';
 export type Theme = 'light' | 'dark';
 
 const App: React.FC = () => {
@@ -38,8 +37,6 @@ const App: React.FC = () => {
         return <AppointmentsView />;
       case 'messages':
         return <MessagesView />;
-      case 'copilot':
-        return <CopilotView />;
       default:
         return <Dashboard />;
     }

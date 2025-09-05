@@ -1,6 +1,3 @@
-
-
-
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
@@ -12,7 +9,8 @@ const app = express();
 const port = process.env.PORT || 3001;
 
 app.use(cors());
-// FIX: The express.json() middleware must be invoked as a function call.
+// Fix: The express.json() middleware must be invoked as a function.
+// FIX: Invoked express.json() middleware.
 app.use(express.json());
 
 // Endpoint to get appointments
@@ -96,8 +94,8 @@ app.get('/api/reports', async (req, res) => {
             sql = `
                 SELECT
                     CASE
-                        WHEN EXTRACT(HOUR FROM datahoramensagem) BETWEEN 8 AND 18
-                             AND EXTRACT(DOW FROM datahoramensagem) BETWEEN 1 AND 5
+                        WHEN EXTRACT(HOUR FROM datahoramensagem AT TIME ZONE 'UTC') BETWEEN 8 AND 18
+                             AND EXTRACT(DOW FROM datahoramensagem AT TIME ZONE 'UTC') BETWEEN 1 AND 5
                         THEN 'Horário Comercial'
                         ELSE 'Fora do Horário Comercial'
                     END AS periodo_atendimento,
@@ -129,13 +127,44 @@ app.get('/api/reports', async (req, res) => {
             sql = `WITH primeiras_conversas AS (SELECT whatsapp, COUNT(DISTINCT DATE(datahoramensagem)) as dias_diferentes_conversa FROM public.clientemensagem WHERE whatsapp IS NOT NULL AND whatsapp <> '' GROUP BY whatsapp) SELECT COUNT(*) as total_clientes, COUNT(CASE WHEN dias_diferentes_conversa > 1 THEN 1 END) as clientes_que_retornaram FROM primeiras_conversas;`;
             break;
         case 'aiResponseSpeed':
-            sql = `WITH pares_mensagem AS (SELECT datahoramensagem as hora_cliente, LEAD(datahoramensagem) OVER (PARTITION BY whatsapp ORDER BY datahoramensagem) as hora_resposta_ia FROM public.clientemensagem WHERE whatsapp IS NOT NULL AND mensagemrecebida IS NOT NULL AND mensagemenviada IS NOT NULL) SELECT ROUND(AVG(EXTRACT(EPOCH FROM (hora_resposta_ia - hora_cliente))), 2) as tempo_medio_resposta_segundos FROM pares_mensagem WHERE hora_resposta_ia > hora_cliente AND EXTRACT(EPOCH FROM (hora_resposta_ia - hora_cliente)) < 300;`;
+            sql = `
+                WITH messages AS (
+                  SELECT
+                    whatsapp,
+                    datahoramensagem,
+                    (mensagemrecebida IS NOT NULL AND mensagemrecebida <> '') AS is_client_message
+                  FROM clientemensagem
+                  WHERE whatsapp IS NOT NULL AND whatsapp <> ''
+                ),
+                client_messages AS (
+                  SELECT
+                    whatsapp,
+                    datahoramensagem,
+                    LEAD(datahoramensagem, 1) OVER (PARTITION BY whatsapp ORDER BY datahoramensagem) as next_message_time,
+                    LEAD(is_client_message, 1) OVER (PARTITION BY whatsapp ORDER BY datahoramensagem) as is_next_message_client
+                  FROM messages
+                  WHERE is_client_message = true
+                )
+                SELECT
+                  ROUND(AVG(EXTRACT(EPOCH FROM (next_message_time - datahoramensagem)))) AS tempo_medio_resposta_segundos
+                FROM client_messages
+                WHERE
+                  is_next_message_client = false
+                  AND next_message_time IS NOT NULL
+                  AND EXTRACT(EPOCH FROM (next_message_time - datahoramensagem)) BETWEEN 1 AND 300;
+            `;
             break;
         case 'peakDemand':
             sql = `SELECT DATE(datahoramensagem) as data_atendimento, EXTRACT(HOUR FROM datahoramensagem) as hora, COUNT(*) as mensagens_por_hora, COUNT(DISTINCT whatsapp) as clientes_unicos_por_hora FROM public.clientemensagem WHERE datahoramensagem IS NOT NULL GROUP BY 1, 2 ORDER BY mensagens_por_hora DESC LIMIT 20;`;
             break;
         case 'executiveSummary':
-            sql = `SELECT 'Total de Mensagens Processadas' as metrica, COUNT(*)::text as valor FROM public.clientemensagem UNION ALL SELECT 'Clientes Únicos Atendidos', COUNT(DISTINCT whatsapp)::text FROM public.clientemensagem WHERE whatsapp IS NOT NULL UNION ALL SELECT 'Dias de Operação', COUNT(DISTINCT DATE(datahoramensagem))::text FROM public.clientemensagem WHERE datahoramensagem IS NOT NULL UNION ALL SELECT 'Média Mensagens/Dia', ROUND(COUNT(*) / NULLIF(COUNT(DISTINCT DATE(datahoramensagem)),0), 2)::text FROM public.clientemensagem WHERE datahoramensagem IS NOT NULL;`;
+            sql = `
+                SELECT 'Total de Mensagens Processadas' as metrica, COUNT(*)::text as valor FROM public.clientemensagem
+                UNION ALL
+                SELECT 'Dias de Operação', COUNT(DISTINCT DATE(datahoramensagem))::text FROM public.clientemensagem WHERE datahoramensagem IS NOT NULL
+                UNION ALL
+                SELECT 'Média Mensagens/Dia', ROUND(COUNT(*)::decimal / NULLIF(COUNT(DISTINCT DATE(datahoramensagem)), 0))::text FROM public.clientemensagem WHERE datahoramensagem IS NOT NULL;
+            `;
             break;
         default:
             return res.status(404).json({ error: 'Report not found' });
