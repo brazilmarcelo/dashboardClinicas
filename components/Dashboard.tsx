@@ -203,6 +203,8 @@ export const Dashboard: React.FC = () => {
       dailyMessages.map(d => ({...d, data_da_mensagem: new Date(d.data_da_mensagem).toLocaleDateString('pt-BR', { timeZone: 'UTC' })}))
   , [dailyMessages]);
 
+  const responseSpeedValue = aiResponseSpeed?.tempo_medio_resposta_segundos;
+
   if (loading) {
     return <div className="flex justify-center items-center h-full text-gray-500 dark:text-gray-400">Carregando...</div>;
   }
@@ -288,8 +290,8 @@ export const Dashboard: React.FC = () => {
             <Card title="Respostas Enviadas pela IA" value={aiResponseRate?.mensagens_cliente_com_resposta_ia ?? 0} color="emerald" />
             <Card title="Clientes que Retornaram" value={returningClients?.clientes_que_retornaram ?? 0} color="blue" />
             <Card 
-                title="Velocidade Média de Resposta" 
-                value={aiResponseSpeed?.tempo_medio_resposta_segundos ? `${formatNumber(aiResponseSpeed.tempo_medio_resposta_segundos)} s` : 'N/A'} 
+                title="Velocidade Média de Resposta/s" 
+                value={responseSpeedValue && responseSpeedValue > 0 ? `${formatNumber(responseSpeedValue)} s` : 'N/A'} 
                 color="violet" 
             />
         </div>

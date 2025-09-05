@@ -9,8 +9,7 @@ const app = express();
 const port = process.env.PORT || 3001;
 
 app.use(cors());
-// Fix: The express.json() middleware must be invoked as a function.
-// FIX: Invoked express.json() middleware.
+// FIX: The express.json() middleware must be invoked as a function.
 app.use(express.json());
 
 // Endpoint to get appointments
@@ -93,16 +92,24 @@ app.get('/api/reports', async (req, res) => {
         case 'serviceHours':
             sql = `
                 SELECT
-                    CASE
-                        WHEN EXTRACT(HOUR FROM datahoramensagem AT TIME ZONE 'UTC') BETWEEN 8 AND 18
-                             AND EXTRACT(DOW FROM datahoramensagem AT TIME ZONE 'UTC') BETWEEN 1 AND 5
+                    CASE 
+                        WHEN EXTRACT(HOUR FROM datahoramensagem) BETWEEN 8 AND 18 
+                             AND EXTRACT(DOW FROM datahoramensagem) BETWEEN 1 AND 5 
                         THEN 'Horário Comercial'
                         ELSE 'Fora do Horário Comercial'
                     END AS periodo_atendimento,
-                    COUNT(*) AS quantidade_mensagens
+                    COUNT(*) AS quantidade_mensagens,
+                    COUNT(DISTINCT whatsapp) AS contatos_unicos,
+                    ROUND(COUNT(*) * 100.0 / SUM(COUNT(*)) OVER(), 2) AS percentual
                 FROM public.clientemensagem
                 WHERE datahoramensagem IS NOT NULL
-                GROUP BY periodo_atendimento;
+                GROUP BY 
+                    CASE 
+                        WHEN EXTRACT(HOUR FROM datahoramensagem) BETWEEN 8 AND 18 
+                             AND EXTRACT(DOW FROM datahoramensagem) BETWEEN 1 AND 5 
+                        THEN 'Horário Comercial'
+                        ELSE 'Fora do Horário Comercial'
+                    END;
             `;
             break;
         case 'hourlyActivity':
@@ -128,30 +135,26 @@ app.get('/api/reports', async (req, res) => {
             break;
         case 'aiResponseSpeed':
             sql = `
-                WITH messages AS (
-                  SELECT
-                    whatsapp,
-                    datahoramensagem,
-                    (mensagemrecebida IS NOT NULL AND mensagemrecebida <> '') AS is_client_message
-                  FROM clientemensagem
-                  WHERE whatsapp IS NOT NULL AND whatsapp <> ''
-                ),
-                client_messages AS (
-                  SELECT
-                    whatsapp,
-                    datahoramensagem,
-                    LEAD(datahoramensagem, 1) OVER (PARTITION BY whatsapp ORDER BY datahoramensagem) as next_message_time,
-                    LEAD(is_client_message, 1) OVER (PARTITION BY whatsapp ORDER BY datahoramensagem) as is_next_message_client
-                  FROM messages
-                  WHERE is_client_message = true
+                WITH pares_mensagem AS (
+                    SELECT 
+                        whatsapp,
+                        datahoramensagem as hora_cliente,
+                        mensagemrecebida,
+                        LEAD(datahoramensagem) OVER (PARTITION BY whatsapp ORDER BY datahoramensagem) as hora_resposta_ia,
+                        LEAD(mensagemenviada) OVER (PARTITION BY whatsapp ORDER BY datahoramensagem) as resposta_ia
+                    FROM public.clientemensagem
+                    WHERE whatsapp IS NOT NULL
                 )
-                SELECT
-                  ROUND(AVG(EXTRACT(EPOCH FROM (next_message_time - datahoramensagem)))) AS tempo_medio_resposta_segundos
-                FROM client_messages
-                WHERE
-                  is_next_message_client = false
-                  AND next_message_time IS NOT NULL
-                  AND EXTRACT(EPOCH FROM (next_message_time - datahoramensagem)) BETWEEN 1 AND 300;
+                SELECT 
+                    COALESCE(
+                        ROUND(AVG(EXTRACT(EPOCH FROM (hora_resposta_ia - hora_cliente))), 2),
+                        0
+                    ) as tempo_medio_resposta_segundos
+                FROM pares_mensagem
+                WHERE mensagemrecebida IS NOT NULL 
+                  AND resposta_ia IS NOT NULL
+                  AND hora_resposta_ia > hora_cliente
+                  AND EXTRACT(EPOCH FROM (hora_resposta_ia - hora_cliente)) < 300;
             `;
             break;
         case 'peakDemand':
