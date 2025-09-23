@@ -249,7 +249,8 @@ export const Dashboard: React.FC = () => {
                             fill="#8884d8"
                             dataKey="value"
                             nameKey="name"
-                            label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                            // FIX: Cast `percent` to number to allow arithmetic operation.
+                            label={({ name, percent }) => `${name} ${((percent as number) * 100).toFixed(0)}%`}
                         >
                             {statusPieData.map((entry, index) => (
                                 <Cell key={`cell-${index}`} fill={COLORS[entry.name as keyof typeof COLORS] || '#8884d8'} />
@@ -302,7 +303,7 @@ export const Dashboard: React.FC = () => {
                     <BarChart data={formattedDailyMessages}>
                         <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.2} />
                         <XAxis dataKey="data_da_mensagem" fontSize={12} tick={{ fill: 'currentColor' }} angle={-25} textAnchor="end" height={60} interval="preserveStartEnd" />
-                        <YAxis fontSize={12} tick={{ fill: 'currentColor' }} ticks={[0, 100, 200, 300, 400]} domain={[0, 400]} />
+                        <YAxis fontSize={12} tick={{ fill: 'currentColor' }} ticks={[0, 200, 400, 600, 800]} domain={[0, 800]} />
                         <Tooltip content={<CustomTooltip />} cursor={{fill: 'rgba(139, 92, 246, 0.1)'}} />
                         <Legend />
                         <Bar dataKey="quantidade_mensagens" name="Mensagens" fill="#8884d8" />
@@ -315,7 +316,7 @@ export const Dashboard: React.FC = () => {
                     <BarChart data={hourlyActivity}>
                         <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.2} />
                         <XAxis dataKey="hora_do_dia" unit="h" fontSize={12} tick={{ fill: 'currentColor' }} />
-                        <YAxis fontSize={12} tick={{ fill: 'currentColor' }} />
+                        <YAxis fontSize={12} tick={{ fill: 'currentColor' }} ticks={[0, 300, 600, 900, 1200]} domain={[0, 1200]} />
                         <Tooltip content={<CustomTooltip />} cursor={{fill: 'rgba(139, 92, 246, 0.1)'}} />
                         <Legend />
                         <Bar dataKey="numero_de_mensagens" name="Mensagens" fill="#82ca9d" />
@@ -348,7 +349,8 @@ export const Dashboard: React.FC = () => {
                             cy="50%" 
                             outerRadius={80} 
                             labelLine={false}
-                            label={({ name, percent }) => `${(percent * 100).toFixed(0)}%`}
+                            // FIX: Cast `percent` to number to allow arithmetic operation.
+                            label={({ name, percent }) => `${((percent as number) * 100).toFixed(0)}%`}
                         >
                             {serviceHours.map((entry) => (
                                 <Cell key={`cell-${entry.periodo_atendimento}`} fill={SERVICE_HOURS_COLORS[entry.periodo_atendimento as keyof typeof SERVICE_HOURS_COLORS]} />
