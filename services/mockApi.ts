@@ -1,7 +1,8 @@
 
 import type { DisparoAgendamento, ClienteAgendamento, ClienteStatus } from '../types';
 
-const API_BASE_URL = 'http://localhost:3001/api';
+// Em desenvolvimento usa localhost. Em produção (Vercel) usa a variável VITE_API_URL.
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
 
 async function handleResponse<T>(response: Response): Promise<T> {
   if (!response.ok) {

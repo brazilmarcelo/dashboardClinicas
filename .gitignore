@@ -15,6 +15,7 @@ dist-ssr
 # Env files — nunca subir credenciais
 .env
 .env.*
+!.env.example
 api/.env
 
 # Editor directories and files
