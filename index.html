@@ -1,35 +1,49 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="pt-BR">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Painel de Atendimento IA</title>
+    <title>Aiude — Painel de Atendimento IA</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
       tailwind.config = {
         darkMode: 'class',
         theme: {
           extend: {
+            fontFamily: {
+              sans: ['Inter', 'system-ui', 'sans-serif'],
+            },
             colors: {
               primary: {
-                DEFAULT: '#6d28d9', // violet-700
-                light: '#8b5cf6',   // violet-500
-                dark: '#5b21b6',    // violet-800
+                DEFAULT: '#7c3aed',
+                light: '#a78bfa',
+                dark: '#6d28d9',
               },
-              secondary: '#10b981', // emerald-500
+              secondary: '#10b981',
               background: {
-                light: '#f9fafb', // gray-50
-                dark: '#111827',  // gray-900
+                light: '#f1f5f9',
+                dark: '#080c18',
               },
               content: {
-                light: '#ffffff', // white
-                dark: '#1f2937'   // gray-800
+                light: '#ffffff',
+                dark: '#0f1626',
+              },
+              surface: {
+                dark: '#19213a',
               },
               text: {
-                light: '#1f2937',  // gray-800
-                dark: '#f9fafb'   // gray-50
-              }
+                light: '#0f172a',
+                dark: '#e2e8f0',
+              },
+              success: '#10b981',
+              danger: '#f43f5e',
+              warning: '#f59e0b',
+              info: '#38bdf8',
+              muted: '#475569',
             },
           },
         },
